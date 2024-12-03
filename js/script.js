@@ -66,221 +66,118 @@ const monthsData = [
     }
 ];
 
-class SongReveal {
+class MonthSlider {
     constructor() {
-        this.currentMonth = 0;
+        this.currentIndex = 0;
+        this.isAnimating = false;
         this.container = document.querySelector('.months-container');
         this.character = document.querySelector('.character');
-        this.progress = document.querySelector('.progress');
-        this.isAnimating = false;
-
-        this.lastScrollTime = Date.now();
-        this.scrollThreshold = 50;
-        this.scrollCooldown = 500;
-
-        this.handleKeydown = this.handleKeydown.bind(this);
-        this.handleWheel = this.handleWheel.bind(this);
-        this.handleNextClick = () => {
-            if (!this.isAnimating) this.revealNext();
-        };
-        this.handlePrevClick = () => {
-            if (!this.isAnimating) this.revealPrevious();
-        };
-
-        this.initializeMonths();
-        this.setupEventListeners();
+        
+        // Create array of sections for direct manipulation
+        this.sections = [];
+        
+        // Add sound effect with correct path
+        this.jumpSound = new Audio('assets/audios/maro-jump-sound-effect_1.mp3');
+        this.jumpSound.volume = 0.3;  // Lowered volume a bit for better user experience
+        
+        this.init();
+        this.bindEvents();
     }
 
-    initializeMonths() {
+    init() {
+        // Create all months at once
         monthsData.forEach((month, index) => {
             const section = document.createElement('section');
             section.className = 'month-section';
+            section.style.transform = `translateX(${100 * index}vw)`;
             section.style.backgroundImage = `url('assets/images/Slice ${index + 1}.png')`;
+            
             section.innerHTML = `
                 <div class="month-header">
                     <h2>${month.name}'s Favorite Song</h2>
                     <p class="month-description">${month.description}</p>
                 </div>
-                <div class="song-content hidden">
+                <div class="song-content">
                     <div class="spotify-widget" 
                         role="complementary" 
                         aria-label="${month.name}'s favorite song player"
                     >
                         <iframe 
                             src="https://open.spotify.com/embed/track/${month.spotifyId}?utm_source=generator&theme=0"
-                            title="Spotify player: ${month.name}'s favorite song"
-                            aria-label="Spotify embedded player for ${month.name}'s monthly favorite song"
-                            width="100%"
+                            title="${month.name}'s Song"
+                            width="100%" 
                             height="152"
                             frameborder="0"
-                            allowtransparency="true"
                             allow="encrypted-media"
-                            style="border-radius: 12px;"
-                            role="application"
-                            tabindex="0"
                         ></iframe>
                     </div>
                 </div>
             `;
+            
+            this.sections.push(section);
             this.container.appendChild(section);
         });
     }
 
-    setupEventListeners() {
-        document.addEventListener('keydown', this.handleKeydown, { capture: true, passive: false });
-        this.container.addEventListener('wheel', this.handleWheel, { 
-            passive: false,
-            capture: true 
-        });
-        document.querySelector('.next-btn').addEventListener('click', this.handleNextClick, { 
-            capture: true,
-            passive: true 
-        });
-        document.querySelector('.prev-btn').addEventListener('click', this.handlePrevClick, { 
-            capture: true,
-            passive: true 
-        });
-    }
-
-    handleKeydown(e) {
-        if (e.code === 'Space' && !this.isAnimating) {
-            e.preventDefault();
-            this.revealNext();
-        } else if (e.code === 'ArrowRight' && !this.isAnimating) {
-            e.preventDefault();
-            this.revealNext();
-        } else if (e.code === 'ArrowLeft' && !this.isAnimating) {
-            e.preventDefault();
-            this.revealPrevious();
-        }
-    }
-
-    handleWheel(e) {
-        e.preventDefault();
-
-        const now = Date.now();
-        if (now - this.lastScrollTime < this.scrollCooldown) return;
-
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-            if (Math.abs(e.deltaX) > this.scrollThreshold) {
-                if (e.deltaX > 0 && !this.isAnimating) {
-                    this.revealNext();
-                } else if (e.deltaX < 0 && !this.isAnimating) {
-                    this.revealPrevious();
-                }
-                this.lastScrollTime = now;
-            }
-        } else {
-            if (Math.abs(e.deltaY) > this.scrollThreshold) {
-                if (e.deltaY > 0 && !this.isAnimating) {
-                    this.revealNext();
-                } else if (e.deltaY < 0 && !this.isAnimating) {
-                    this.revealPrevious();
-                }
-                this.lastScrollTime = now;
-            }
-        }
-    }
-
-    async revealNext() {
+    async goToMonth(index, direction = 1) {
+        if (this.isAnimating) return;
         this.isAnimating = true;
 
-        if (this.currentMonth >= months.length - 1) {
-            this.currentMonth = 0;
-            // Disable smooth scrolling temporarily
-            this.container.style.scrollBehavior = 'auto';
-            this.container.style.scrollSnapType = 'none';
-            this.container.scrollLeft = 0;
-            // Re-enable after brief delay
-            await new Promise(resolve => setTimeout(resolve, 50));
-            this.container.style.scrollSnapType = 'x mandatory';
-            this.container.style.scrollBehavior = 'smooth';
-        } else {
-            this.currentMonth++;
-        }
+        // Move all sections
+        this.sections.forEach((section, i) => {
+            section.style.transition = 'transform 0.5s ease';
+            section.style.transform = `translateX(${100 * (i - index)}vw)`;
+        });
 
-        await this.animateReveal();
-        this.updateProgress();
-        this.isAnimating = false;
-    }
-
-    async revealPrevious() {
-        this.isAnimating = true;
-
-        if (this.currentMonth <= 0) {
-            this.currentMonth = months.length - 1;
-            // Disable smooth scrolling temporarily
-            this.container.style.scrollBehavior = 'auto';
-            this.container.style.scrollSnapType = 'none';
-            this.container.scrollLeft = this.container.scrollWidth;
-            // Re-enable after brief delay
-            await new Promise(resolve => setTimeout(resolve, 50));
-            this.container.style.scrollSnapType = 'x mandatory';
-            this.container.style.scrollBehavior = 'smooth';
-        } else {
-            this.currentMonth--;
-        }
-
-        await this.animateReveal(true);
-        this.updateProgress();
-        this.isAnimating = false;
-    }
-
-    async animateReveal(reverse = false) {
-        const section = this.container.children[this.currentMonth];
-        const content = section.querySelector('.song-content');
-
-        // Scroll to section
-        section.scrollIntoView({ behavior: 'smooth' });
-
-        // Character jump animation
+        // Animate Mario
         this.character.classList.add('jump');
-        setTimeout(() => this.character.classList.remove('jump'), 500);
+        setTimeout(() => {
+            this.character.classList.remove('jump');
+            this.isAnimating = false;
+        }, 500);
 
-        // Reveal content
-        content.classList.remove('hidden');
+        this.currentIndex = index;
+        this.updateProgress();
+    }
 
-        // Simulate API call (replace with actual API integration)
-        await this.fetchSongData(this.currentMonth);
+    next() {
+        const nextIndex = (this.currentIndex + 1) % this.sections.length;
+        this.goToMonth(nextIndex, 1);
+    }
+
+    prev() {
+        const prevIndex = (this.currentIndex - 1 + this.sections.length) % this.sections.length;
+        this.goToMonth(prevIndex, -1);
+    }
+
+    bindEvents() {
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.code === 'ArrowRight') {
+                e.preventDefault();
+                this.jumpSound.currentTime = 0;  // Reset sound to start
+                this.jumpSound.play();
+                this.next();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                this.prev();
+            }
+        });
+
+        document.querySelector('.next-btn').addEventListener('click', () => {
+            this.jumpSound.currentTime = 0;
+            this.jumpSound.play();
+            this.next();
+        });
+        document.querySelector('.prev-btn').addEventListener('click', () => this.prev());
     }
 
     updateProgress() {
-        const progress = ((this.currentMonth + 1) / months.length) * 100;
-        this.progress.style.width = `${progress}%`;
-    }
-
-    async fetchSongData(monthIndex) {
-        // Simulate API call - replace with actual API integration
-        return new Promise(resolve => {
-            setTimeout(() => {
-                // Mock data
-                resolve({
-                    title: 'Sample Song',
-                    artist: 'Sample Artist',
-                    description: 'This is why I love this song...'
-                });
-            }, 500);
-        });
-    }
-
-    cleanup() {
-        document.removeEventListener('keydown', this.handleKeydown, { capture: true, passive: false });
-        this.container.removeEventListener('wheel', this.handleWheel, { 
-            passive: false,
-            capture: true 
-        });
-        document.querySelector('.next-btn').removeEventListener('click', this.handleNextClick, { 
-            capture: true,
-            passive: true 
-        });
-        document.querySelector('.prev-btn').removeEventListener('click', this.handlePrevClick, { 
-            capture: true,
-            passive: true 
-        });
+        const progress = document.querySelector('.progress');
+        progress.style.width = `${((this.currentIndex + 1) / this.sections.length) * 100}%`;
     }
 }
 
 // Initialize and store instance
 document.addEventListener('DOMContentLoaded', () => {
-    window.songReveal = new SongReveal();
+    window.monthSlider = new MonthSlider();
 });
