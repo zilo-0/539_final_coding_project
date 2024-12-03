@@ -66,6 +66,97 @@ const monthsData = [
     }
 ];
 
+const monthColors = {
+    'January': 'rgba(173, 216, 230, 0.8)',   // Ice blue for winter
+    'February': 'rgba(255, 182, 193, 0.8)',   // Pink for Valentine's
+    'March': 'rgba(144, 238, 144, 0.8)',      // Spring green
+    'April': 'rgba(230, 230, 250, 0.8)',      // Lavender for spring flowers
+    'May': 'rgba(255, 218, 185, 0.8)',        // Peach for late spring
+    'June': 'rgba(135, 206, 250, 0.8)',       // Sky blue for summer
+    'July': 'rgba(255, 165, 0, 0.8)',         // Orange for summer heat
+    'August': 'rgba(255, 215, 0, 0.8)',       // Golden for late summer
+    'September': 'rgba(205, 133, 63, 0.8)',    // Peru brown for fall
+    'October': 'rgba(255, 69, 0, 0.8)',        // Red-orange for autumn
+    'November': 'rgba(139, 69, 19, 0.8)',      // Saddle brown for late fall
+    'December': 'rgba(65, 105, 225, 0.8)'      // Royal blue for winter
+};
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = Math.random() * 3 + 2;
+        this.speedX = Math.random() * 6 - 3;
+        this.speedY = Math.random() * 6 - 3;
+        this.alpha = 1;
+    }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.alpha -= 0.01;
+        this.size -= 0.1;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class ParticleSystem {
+    constructor() {
+        this.canvas = document.createElement('canvas');
+        this.canvas.className = 'particle-canvas';
+        document.body.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    }
+
+    createBurst(x, y, color) {
+        for (let i = 0; i < 30; i++) {
+            this.particles.push(new Particle(x, y, color));
+        }
+        if (!this.isAnimating) {
+            this.animate();
+        }
+    }
+
+    animate() {
+        this.isAnimating = true;
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            particle.update();
+            particle.draw(this.ctx);
+
+            if (particle.alpha <= 0 || particle.size <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+
+        if (this.particles.length > 0) {
+            requestAnimationFrame(() => this.animate());
+        } else {
+            this.isAnimating = false;
+        }
+    }
+}
+
 class MonthSlider {
     constructor() {
         this.currentIndex = 0;
@@ -79,6 +170,14 @@ class MonthSlider {
         // Add sound effect with correct path
         this.jumpSound = new Audio('assets/audios/maro-jump-sound-effect_1.mp3');
         this.jumpSound.volume = 0.3;  // Lowered volume a bit for better user experience
+        
+        this.progressBar = document.querySelector('.progress-bar');
+        this.progressIndicator = document.querySelector('.progress');
+        this.monthPreview = document.createElement('div');
+        this.monthPreview.className = 'month-preview';
+        this.progressBar.appendChild(this.monthPreview);
+        
+        this.particleSystem = new ParticleSystem();
         
         this.init();
         this.bindEvents();
@@ -123,6 +222,23 @@ class MonthSlider {
         if (this.isAnimating) return;
         this.isAnimating = true;
 
+        // Create particle burst at Mario's position
+        const marioRect = this.character.getBoundingClientRect();
+        const color = monthColors[monthsData[index].name];
+        this.particleSystem.createBurst(
+            marioRect.left + marioRect.width / 2,
+            marioRect.top + marioRect.height / 2,
+            color
+        );
+
+        // Get current and next sections
+        const currentSection = this.sections[this.currentIndex];
+        const nextSection = this.sections[index];
+
+        // Add flash effect to next section
+        nextSection.classList.add('flash');
+        setTimeout(() => nextSection.classList.remove('flash'), 500);
+
         // Move all sections
         this.sections.forEach((section, i) => {
             section.style.transition = 'transform 0.5s ease';
@@ -138,6 +254,10 @@ class MonthSlider {
 
         this.currentIndex = index;
         this.updateProgress();
+        document.documentElement.style.setProperty(
+            '--progress-color', 
+            monthColors[monthsData[index].name]
+        );
     }
 
     next() {
@@ -169,6 +289,37 @@ class MonthSlider {
             this.next();
         });
         document.querySelector('.prev-btn').addEventListener('click', () => this.prev());
+
+        // Add click event for Mario
+        this.character.addEventListener('click', () => {
+            if (!this.isAnimating) {
+                this.jumpSound.currentTime = 0;
+                this.jumpSound.play();
+                this.next();
+            }
+        });
+
+        // Add progress bar interaction
+        this.progressBar.addEventListener('mousemove', (e) => {
+            const rect = this.progressBar.getBoundingClientRect();
+            const position = (e.clientX - rect.left) / rect.width;
+            const monthIndex = Math.floor(position * this.sections.length);
+            const month = monthsData[monthIndex];
+            
+            // Update preview position and content
+            this.monthPreview.style.left = `${e.clientX}px`;
+            this.monthPreview.textContent = month.name;
+        });
+
+        this.progressBar.addEventListener('click', (e) => {
+            if (this.isAnimating) return;
+            
+            const rect = this.progressBar.getBoundingClientRect();
+            const position = (e.clientX - rect.left) / rect.width;
+            const monthIndex = Math.floor(position * this.sections.length);
+            
+            this.goToMonth(monthIndex);
+        });
     }
 
     updateProgress() {
