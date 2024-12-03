@@ -13,28 +13,28 @@
 <body>
     <header role="banner">
         <h1 class="visually-hidden">Zack's Monthly Favorites</h1>
-        <div class="progress-bar">
+        <div class="progress-bar" role="progressbar" aria-label="Monthly progress" aria-valuenow="8" aria-valuemin="0" aria-valuemax="100">
             <div class="progress"></div>
         </div>
     </header>
 
-    <main class="container" role="main">
-        <div class="character">
+    <main class="container" role="main" aria-live="polite">
+        <div class="character" aria-hidden="true">
             <img src="assets/images/dfrxwfz-e9838fc0-2b12-4f88-94c7-edfd286880df.png" alt="Mario sprite"
                 class="character-sprite">
         </div>
 
-        <div class="months-container">
+        <div class="months-container" role="region" aria-label="Monthly song showcase">
             <!-- Months will be dynamically generated -->
         </div>
     </main>
 
     <nav class="controls-container" role="navigation" aria-label="Month navigation">
-        <div class="controls-prompt">press spacebar to jump to the next month!</div>
+        <div class="controls-prompt" role="alert">press spacebar to jump to the next month!</div>
         <div class="controls">
-            <button class="prev-btn" aria-label="Previous month">←</button>
-            <div class="month-indicators"></div>
-            <button class="next-btn" aria-label="Next month">→</button>
+            <button class="prev-btn" aria-label="Go to previous month">←</button>
+            <div class="month-indicators" aria-hidden="true"></div>
+            <button class="next-btn" aria-label="Go to next month">→</button>
         </div>
     </nav>
 
