@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zack's Monthly Favorites</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+    <link rel="manifest" href="assets/icons/site.webmanifest">
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://use.typekit.net/ssh2xvr.css">
@@ -13,8 +17,14 @@
 <body>
     <header role="banner">
         <h1 class="visually-hidden">Zack's Monthly Favorites</h1>
-        <div class="progress-bar" role="progressbar" aria-label="Monthly progress" aria-valuenow="8" aria-valuemin="0" aria-valuemax="100">
-            <div class="progress"></div>
+        <div class="progress-bar">
+            <div class="progress" 
+                role="progressbar" 
+                aria-label="Monthly progress"
+                aria-valuenow="8" 
+                aria-valuemin="0" 
+                aria-valuemax="100">
+            </div>
         </div>
     </header>
 
@@ -24,16 +34,24 @@
                 class="character-sprite">
         </div>
 
-        <div class="months-container" role="region" aria-label="Monthly song showcase">
-            <!-- Months will be dynamically generated -->
+        <div class="months-container">
+            <ul role="list" aria-label="Monthly song showcase">
+                <!-- Months will be dynamically generated as list items -->
+            </ul>
         </div>
     </main>
+
+    <div id="player-container">
+        <!-- Spotify widgets will be dynamically generated here, outside of other landmarks -->
+    </div>
 
     <nav class="controls-container" role="navigation" aria-label="Month navigation">
         <div class="controls-prompt" role="alert">press spacebar to jump to the next month!</div>
         <div class="controls">
             <button class="prev-btn" aria-label="Go to previous month">←</button>
-            <div class="month-indicators" aria-hidden="true"></div>
+            <ul class="month-indicators" role="list" aria-label="Month indicator dots">
+                <!-- Month indicators will be generated as list items -->
+            </ul>
             <button class="next-btn" aria-label="Go to next month">→</button>
         </div>
     </nav>
